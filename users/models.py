@@ -50,6 +50,7 @@ class CustomUser(BaseModel, AbstractUser):
             user = self,
             verify_type=verify_type
         )
+        return code
 
 
     def check_username(self):
