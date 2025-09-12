@@ -3,9 +3,14 @@ from datetime import datetime
 from django.shortcuts import render
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from .serializers import SignUpSerializer, ChangeInfo
+from rest_framework_simplejwt.serializers import TokenObtainSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
+
+from .serializers import SignUpSerializer, ChangeInfo, UserPhotoSerializer, LoginSerializers, LogoutSerializers, \
+    ForgotPasswordSerializer
 from rest_framework.generics import ListCreateAPIView, UpdateAPIView
 from .models import CustomUser, NEW, CODE_VERIFIED, VIA_PHONE, VIA_EMAIL
 from rest_framework.views import APIView
@@ -98,3 +103,42 @@ class ChangeInfoApi(UpdateAPIView):
 
     def partial_update(self, request, *args, **kwargs):
         super(ChangeInfoApi, self).partial_update(request,*args, **kwargs)
+
+class UserPhotoApi(UpdateAPIView):
+    serializer_class = UserPhotoSerializer
+    http_method_names = ['PATCH']
+
+    def get_object(self):
+        return self.request.user
+
+    def partial_update(self, request, *args, **kwargs):
+        user = request.user
+        data = {
+            'status': status.HTTP_200_OK,
+            'access_token': user.token()['access'],
+            'refresh_token': user.token()['refresh_token']
+        }
+        return Response(data)
+
+class LoginApi(TokenObtainPairView):
+    serializer_class = LoginSerializers
+    permission_classes = [AllowAny, ]
+
+class LogoutApi(APIView):
+    def post(self, request):
+        refresh = request.data.get('refresh_token')
+
+        serializer = LogoutSerializers(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            token=RefreshToken(refresh)
+            token.blacklist()
+            return Response({'msg':"siz logout qildingiz"})
+        except Exception as e:
+            raise ValidationError(e)
+class ForgotPasswordApi(APIView):
+    def post(self, request):
+        serializer = ForgotPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response({"data":serializer.data})
+
