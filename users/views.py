@@ -15,7 +15,7 @@ from rest_framework.generics import ListCreateAPIView, UpdateAPIView
 from .models import CustomUser, NEW, CODE_VERIFIED, VIA_PHONE, VIA_EMAIL
 from rest_framework.views import APIView
 from shared.utility import create_verify_code
-
+from .serializers import MyTokenObtainPairSerializer
 
 # Create your views here.
 class SignUpView(ListCreateAPIView):
@@ -141,4 +141,10 @@ class ForgotPasswordApi(APIView):
         serializer = ForgotPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return Response({"data":serializer.data})
+
+
+
+class LoginView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
+
 

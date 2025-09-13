@@ -8,6 +8,33 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from shared.utility import check_email_or_phone_number, valid_username
 from .models import CustomUser, VIA_EMAIL, VIA_PHONE, DONE, PHOTO_DONE
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework import serializers
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    username_field = "email"
+
+    def validate(self, data):
+        identifier = data.get("email") or data.get("phone") or data.get("username")
+        password = data.get("password")
+
+        login_type = check_email_or_phone_number(identifier)
+
+        if login_type == "email":
+            user = User.objects.filter(email=identifier).first()
+        elif login_type == "phone":
+            user = User.objects.filter(phone=identifier).first()
+        else:
+            user = None
+
+        if user and user.check_password(password):
+            data["email"] = user.email  
+            return super().validate(data)
+
+        raise serializers.ValidationError("Email/Telefon yoki parol noto‘g‘ri.")
 
 
 class SignUpSerializer(serializers.ModelSerializer):
